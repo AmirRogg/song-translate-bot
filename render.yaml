@@ -1,1 +1,14 @@
+services:
+  - type: web
+    name: song-translate-bot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: BOT_TOKEN
+        value: 7810040326:AAHjNWmwxHCfNDh_bK4fkB_cx8C7mh3xYuc
+      - key: GENIUS_TOKEN
+        value: I4rklVVb9VQC4_fcYcxa_FkEUTc15X799HUNitTw5vyo3VFTGQLut8MBDUt82eCQ
+      - key: WEBHOOK_URL
+        value: https://song-translate-bot.onrender.com
 
