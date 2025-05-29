@@ -4,15 +4,17 @@ import lyricsgenius
 from googletrans import Translator
 import yt_dlp
 from flask import Flask, request
-import threading
 
 # ---------- Config ----------
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 GENIUS_TOKEN = os.getenv('GENIUS_TOKEN')
-WEBHOOK_URL = os.getenv('WEBHOOK_URL')  # مثل https://yourdomain.com/
+WEBHOOK_BASE_URL = os.getenv('WEBHOOK_URL')  # مثل https://yourappname.onrender.com
 
 if not BOT_TOKEN:
-    raise ValueError("🔴 BOT_TOKEN در Env Vars روی Render ست نشده یا خالیه!")
+    raise ValueError("🔴 BOT_TOKEN در متغیرهای محیطی (Env Vars) ست نشده!")
+
+if not WEBHOOK_BASE_URL:
+    raise ValueError("🔴 WEBHOOK_URL در متغیرهای محیطی (Env Vars) ست نشده!")
 
 bot = telebot.TeleBot(BOT_TOKEN)
 translator = Translator()
@@ -21,13 +23,13 @@ genius = lyricsgenius.Genius(GENIUS_TOKEN) if GENIUS_TOKEN else None
 # ---------- Bot Logic ----------
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "👋 سلام! اسم آهنگ رو بفرست تا متن+ترجمه+آهنگ+کاور رو برات بفرستم.")
+    bot.reply_to(message, "👋 سلام! اسم آهنگ رو بفرست تا متن + ترجمه + آهنگ + کاور رو برات بفرستم.")
 
 @bot.message_handler(func=lambda m: True)
 def handle_song(message):
     song_name = message.text.strip()
     chat_id = message.chat.id
-    bot.send_message(chat_id, f"⏳ در حال پردازش «{song_name}» …")
+    bot.send_message(chat_id, f"⏳ در حال پردازش «{song_name}»...")
 
     try:
         song = genius.search_song(song_name) if genius else None
@@ -58,32 +60,31 @@ def handle_song(message):
             bot.send_audio(chat_id, audio=audio, title=song_name)
 
     except Exception as e:
-        bot.send_message(chat_id, "❌ مشکلی پیش اومد، دوباره تلاش کن.")
-        print("Error:", e)
+        bot.send_message(chat_id, "❌ یه مشکلی پیش اومد، دوباره تلاش کن.")
+        print("🚨 Error:", e)
 
-# ---------- Flask Web Server for Render ----------
+# ---------- Flask App ----------
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Bot is running, king 👑"
+    return '🤖 Bot is alive!'
 
 @app.route('/' + BOT_TOKEN, methods=['POST'])
 def webhook():
-    json_string = request.get_data().decode('utf-8')
-    update = telebot.types.Update.de_json(json_string)
+    update = telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
     bot.process_new_updates([update])
-    return '!', 200
+    return 'OK', 200
 
-# ---------- Start Bot & Web ----------
+# ---------- Start ----------
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    import time
+    time.sleep(3)  # برای اطمینان بعد از ری‌استارت
 
-    # حذف وبهوک قبلی و ست کردن وبهوک جدید
     bot.remove_webhook()
-    if WEBHOOK_URL:
-        bot.set_webhook(url=WEBHOOK_URL + BOT_TOKEN)
-    else:
-        print("⚠️ WEBHOOK_URL تنظیم نشده، وبهوک فعال نمیشه.")
+    full_webhook_url = f"{WEBHOOK_BASE_URL}/{BOT_TOKEN}"
+    bot.set_webhook(url=full_webhook_url)
+    print(f"✅ Webhook set: {full_webhook_url}")
 
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
