@@ -10,7 +10,7 @@ from telebot import types
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 GENIUS_TOKEN = os.getenv('GENIUS_TOKEN')
 WEBHOOK_BASE_URL = os.getenv('WEBHOOK_URL')
-CHANNEL_USERNAME = '@hiphopthe90'  # کانالی که کاربر باید عضو باشه
+CHANNEL_USERNAME = '@hiphopthe90s'  # کانالی که کاربر باید عضو باشه
 
 if not BOT_TOKEN:
     raise ValueError("🔴 BOT_TOKEN در متغیرهای محیطی (Env Vars) ست نشده!")
