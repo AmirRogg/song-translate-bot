@@ -10,5 +10,5 @@ services:
       - key: GENIUS_TOKEN
         value: I4rklVVb9VQC4_fcYcxa_FkEUTc15X799HUNitTw5vyo3VFTGQLut8MBDUt82eCQ
       - key: WEBHOOK_URL
-        value: https://song-translate-bot.onrender.com
+        value: https://song-translate-bot.onrender.com/
 
