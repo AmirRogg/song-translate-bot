@@ -3,12 +3,13 @@ import telebot
 import lyricsgenius
 from googletrans import Translator
 import yt_dlp
-from flask import Flask
+from flask import Flask, request
 import threading
 
 # ---------- Config ----------
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 GENIUS_TOKEN = os.getenv('GENIUS_TOKEN')
+WEBHOOK_URL = os.getenv('WEBHOOK_URL')  # مثل https://yourdomain.com/
 
 if not BOT_TOKEN:
     raise ValueError("🔴 BOT_TOKEN در Env Vars روی Render ست نشده یا خالیه!")
@@ -29,14 +30,10 @@ def handle_song(message):
     bot.send_message(chat_id, f"⏳ در حال پردازش «{song_name}» …")
 
     try:
-        # متن آهنگ
         song = genius.search_song(song_name) if genius else None
         lyrics = song.lyrics if song else "متن در دسترس نیست."
-
-        # ترجمه
         translation = translator.translate(lyrics, src='en', dest='fa').text
 
-        # دانلود صوت
         ydl_opts = {
             'format': 'bestaudio/best',
             'quiet': True,
@@ -48,18 +45,15 @@ def handle_song(message):
             entry = info['entries'][0]
             file_path = ydl.prepare_filename(entry)
 
-        # ارسال متن و ترجمه
         bot.send_message(chat_id,
             f"🎵 *{song_name}*\n\n📝 متن انگلیسی:\n{lyrics}\n\n🔁 ترجمه فارسی:\n{translation}",
             parse_mode='Markdown'
         )
 
-        # کاور
         if song:
             cover_url = song.song_art_image_url
             bot.send_photo(chat_id, cover_url)
 
-        # فایل صوتی
         with open(file_path, 'rb') as audio:
             bot.send_audio(chat_id, audio=audio, title=song_name)
 
@@ -74,11 +68,22 @@ app = Flask(__name__)
 def home():
     return "Bot is running, king 👑"
 
-def run_flask():
-    port = int(os.environ.get('PORT', 10000))  # پورت پیش‌فرض
-    app.run(host='0.0.0.0', port=port)
+@app.route('/' + BOT_TOKEN, methods=['POST'])
+def webhook():
+    json_string = request.get_data().decode('utf-8')
+    update = telebot.types.Update.de_json(json_string)
+    bot.process_new_updates([update])
+    return '!', 200
 
 # ---------- Start Bot & Web ----------
 if __name__ == '__main__':
-    threading.Thread(target=run_flask).start()  # اجرای Flask تو ترد جدا
-    bot.infinity_polling()  # اجرای ربات تلگرام
+    port = int(os.environ.get('PORT', 5000))
+
+    # حذف وبهوک قبلی و ست کردن وبهوک جدید
+    bot.remove_webhook()
+    if WEBHOOK_URL:
+        bot.set_webhook(url=WEBHOOK_URL + BOT_TOKEN)
+    else:
+        print("⚠️ WEBHOOK_URL تنظیم نشده، وبهوک فعال نمیشه.")
+
+    app.run(host='0.0.0.0', port=port)
