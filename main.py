@@ -8,7 +8,7 @@ from flask import Flask, request
 # ---------- Config ----------
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 GENIUS_TOKEN = os.getenv('GENIUS_TOKEN')
-WEBHOOK_BASE_URL = os.getenv('WEBHOOK_URL')  # مثل https://yourappname.onrender.com
+WEBHOOK_BASE_URL = os.getenv('WEBHOOK_URL')
 
 if not BOT_TOKEN:
     raise ValueError("🔴 BOT_TOKEN در متغیرهای محیطی (Env Vars) ست نشده!")
@@ -79,10 +79,10 @@ def webhook():
 # ---------- Start ----------
 if __name__ == '__main__':
     import time
-    time.sleep(3)  # برای اطمینان بعد از ری‌استارت
+    time.sleep(3)
 
     bot.remove_webhook()
-    full_webhook_url = f"{WEBHOOK_BASE_URL}/{BOT_TOKEN}"
+    full_webhook_url = f"{WEBHOOK_BASE_URL.rstrip('/')}/{BOT_TOKEN}"
     bot.set_webhook(url=full_webhook_url)
     print(f"✅ Webhook set: {full_webhook_url}")
 
